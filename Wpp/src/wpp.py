@@ -98,8 +98,8 @@ class Whatsapp:
         frame = frame[["User", "Sunday", "Monday", "Tuesday",\
                         "Wednesday", "Thursday", "Friday", "Saturday"]]
 
-        frame.loc[len(frame)] = frame.sum()
-        frame.loc[2, "User"] = "AllUsers"
+        frame.loc["AllUsers"] = frame.sum(numeric_only=True)
+        frame.loc["AllUsers","User"] = "AllUsers"
 
         self.df = pd.merge(self.df, frame)
 
@@ -143,16 +143,17 @@ def main():
 
     wpp = Whatsapp()
 
-    wpp.rename_user("luís rafael sena","Eu")
-    wpp.rename_user("mô 🤓❤️","Amor")
+    #wpp.ranking()
+    #wpp.repeated_message("dias")
+    frame , title = wpp.week_chart()
+    print(frame)
+    #wpp.df.to_csv("tortilha.csv")
 
-    wpp.ranking()
-    wpp.emoji_count()
-    wpp.week_chart()
-    wpp.repeated_message("amo")
-    wpp.word_count()
+    frame, title = wpp.emoji_count()
+    #frame.to_csv(f"{title}.csv")
 
-    print(wpp.df)
+    frame , title = wpp.word_count()
+    #frame.to_csv(f"{title}.csv")
 
 if __name__ == "__main__":
     main()

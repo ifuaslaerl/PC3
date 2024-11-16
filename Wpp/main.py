@@ -8,12 +8,20 @@ def main():
 
     wpp = Whatsapp()
 
-    wpp.rename_user("Luís Rafael Sena", "Eu")
-    wpp.rename_user("Mô 🤓❤️", "Amor")
+    #frames = [wpp.ranking(),
+    #wpp.repeated_message("dias")]
 
-    frame, title = wpp.word_count()
+    # for frame, title in frames:
+    #     graifico = Grafical(frame,title)
+    #     x = frame.columns[0]
+    #     for y in frame.columns[1:]:
+    #         graifico.bar_plot(x, y)
+    #         graifico.pie_plot(x, y)
 
-    frame.to_csv(f"{title}.csv")
+    frame, title = wpp.week_chart()
+    columns = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+    grafico = Grafical(frame,title)
+    grafico.radar_chart(columns,frame.loc["AllUsers"][columns])
 
 if __name__ == "__main__":
     main()
