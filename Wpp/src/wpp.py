@@ -10,8 +10,9 @@ class Whatsapp:
 
     def __init__(self, path="WppFolder/chat.txt"):
         self.path = path
+        self.df = pd.DataFrame()
         with open(path,encoding="UTF-8") as f:
-            self.chat = f.read()
+            self.chat = f.read().lower()
             line_format = \
                 r'(\d{1,2}\/\d{1,2}\/\d{1,4}) (\d{1,2}:\d{1,2}) - (.+?): (.*)'
             pattern = re.compile(line_format)
@@ -23,6 +24,8 @@ class Whatsapp:
 
             self.data.drop(columns=["Day", "Hour"], inplace=True)
             self.data = self.data[["Datetime", "User", "Message"]]
+            self.data["Message"] = self.data["Message"]
+        self.df["User"] = self.data["User"].unique()
 
     def __len__(self) -> int:
         return len(self.data)
@@ -30,6 +33,7 @@ class Whatsapp:
     def rename_user(self, user: str, new_name: str) -> None:
         """ Rename user to new_name. """
         self.data["User"] = self.data["User"].replace(user,new_name)
+        self.df["User"] = self.df["User"].replace(user,new_name)
 
     def ranking(self) -> typing.Tuple[pd.DataFrame , str]:
         """ Gets the ranking of who sends the maximum amount of messages. """
@@ -44,6 +48,8 @@ class Whatsapp:
         ranking = pd.merge(message_frame, char_frame)
 
         ranking = ranking[["User", "MessageCount", "TotalCharacters"]]
+
+        self.df = pd.merge(ranking, self.df)
 
         return ranking, "Ranking"
 
@@ -70,12 +76,12 @@ class Whatsapp:
 
         emoji_counts = Counter(all_emojis)
 
-        emoji_df = pd.DataFrame(emoji_counts.items(), columns=["Emoji", "Count"])
-        emoji_df.sort_values(by="Count", ascending=False, inplace=True)
+        frame = pd.DataFrame(emoji_counts.items(), columns=["Emoji", "Count"])
+        frame.sort_values(by="Count", ascending=False, inplace=True)
 
-        emoji_df.reset_index(drop=True, inplace=True)
+        frame.reset_index(drop=True, inplace=True)
 
-        return emoji_df, "Emojis"
+        return frame, "Emojis"
 
     def week_chart(self) -> typing.Tuple[pd.DataFrame , str]:
         """ Get amount of messages in days of week. """
@@ -93,7 +99,9 @@ class Whatsapp:
                         "Wednesday", "Thursday", "Friday", "Saturday"]]
 
         frame.loc[len(frame)] = frame.sum()
-        frame["User"][2] = "AllUsers"
+        frame.loc[2, "User"] = "AllUsers"
+
+        self.df = pd.merge(self.df, frame)
 
         return frame , "WeekFrequency"
 
@@ -101,12 +109,14 @@ class Whatsapp:
         """ Get amount of repetition os string in messages. """
 
         frame = pd.DataFrame()
-        frame["Frequency"] = self.data["Message"].str.count(find)
+        frame[f"{find}Frequency"] = self.data["Message"].str.count(find)
         frame["User"] = self.data["User"]
 
-        frame = frame.groupby("User")["Frequency"].sum().reset_index()
+        frame = frame.groupby("User")[f"{find}Frequency"].sum().reset_index()
 
-        return frame , f"Frequency of {find}"
+        self.df = pd.merge(self.df, frame)
+
+        return frame , f"{find}Frequency"
 
     def word_count(self)-> typing.Tuple[pd.DataFrame , str]:
         """ Cria um DataFrame que representa a quantidade de vezes que
@@ -126,21 +136,23 @@ class Whatsapp:
 
         frame = frame[frame.sum(axis=0).sort_values(ascending=False).index]
 
-        return frame.T, "WordFrequency"
+        return frame, "WordFrequency"
 
 def main():
     """ Debugging function. """
 
     wpp = Whatsapp()
 
-    wpp.rename_user("Luís Rafael Sena","Eu")
-    wpp.rename_user("Mô 🤓❤️","Amor")
+    wpp.rename_user("luís rafael sena","Eu")
+    wpp.rename_user("mô 🤓❤️","Amor")
 
-    print(wpp.ranking()[0].head())
-    print(wpp.emoji_count()[0].head())
-    print(wpp.week_chart()[0].head())
-    print(wpp.repeated_message("amo")[0])
-    print(wpp.word_count()[0])
+    wpp.ranking()
+    wpp.emoji_count()
+    wpp.week_chart()
+    wpp.repeated_message("amo")
+    wpp.word_count()
+
+    print(wpp.df)
 
 if __name__ == "__main__":
     main()
